@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>বিপিএল ২০৩০ - প্রো সিমুলেটর</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #06b6d4; /* Cyan */
+            --accent: #f59e0b; /* Amber */
+            --danger: #f43f5e;
+            --success: #10b981;
+            --text-dark: #1e293b;
+            --text-light: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: 'Hind Siliguri', sans-serif; 
+            /* Premium dark gradient background */
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            background-attachment: fixed;
+            color: var(--text-dark); 
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        nav {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .nav-brand { color: white; font-size: 1.6rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .nav-brand span { color: var(--secondary); }
+        .nav-links { display: flex; gap: 10px; }
+        .nav-btn {
+            background: transparent; color: #cbd5e1; border: none; font-size: 1.05rem; 
+            font-family: inherit; font-weight: 600; cursor: pointer; padding: 8px 18px; border-radius: 8px; transition: all 0.3s;
+        }
+        .nav-btn:hover { color: white; background: rgba(255,255,255,0.1); }
+        .nav-btn.active { color: white; background: var(--secondary); box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4); }
+
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 15px; }
+        .tab-content { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .tab-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Dashboard Match Card (Premium Glassmorphism) */
+        .dashboard {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; border-radius: 24px; padding: 40px 20px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-width: 850px; margin: 0 auto 30px auto;
+            position: relative; overflow: hidden;
+        }
+        .dashboard::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 60%); z-index: -1;
+        }
+        .dashboard.knockout-mode::before { background: radial-gradient(circle, rgba(244, 63, 94, 0.15) 0%, transparent 60%); }
+        .dashboard.knockout-mode { border-color: rgba(244, 63, 94, 0.3); }
+
+        .match-badge {
+            background: rgba(245, 158, 11, 0.15); display: inline-block; padding: 8px 24px;
+            border-radius: 30px; font-size: 1rem; color: var(--accent); margin-bottom: 25px; 
+            font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .teams-display { display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 25px; }
+        .team-info { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 40%; }
+        .team-logo-lg { width: 100px; height: 100px; filter: drop-shadow(0 15px 20px rgba(0,0,0,0.4)); transition: transform 0.4s; }
+        .team-logo-lg:hover { transform: scale(1.15) rotate(5deg); }
+        .team-name-lg { font-size: 1.5rem; font-weight: 700; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .vs { font-size: 1.4rem; background: linear-gradient(135deg, var(--accent), #d97706); color: #fff; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; border-radius: 50%; font-weight: 800; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); z-index: 2; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        
+        /* Updated Venue Styling */
+        .venue-info { 
+            background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 16px;
+            display: inline-block; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .venue-name { font-size: 1.15rem; color: #e0f2fe; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .venue-details { font-size: 0.95rem; color: #bae6fd; display: flex; justify-content: center; gap: 15px; }
+        .venue-details span { background: rgba(6, 182, 212, 0.2); padding: 4px 12px; border-radius: 6px; }
+
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .controls button { padding: 14px 30px; font-size: 1.1rem; font-weight: 700; cursor: pointer; border: none; border-radius: 12px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-family: inherit; }
+        .btn-play { background: linear-gradient(135deg, #06b6d4, #0284c7); color: white; box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4); }
+        .btn-play:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(2, 132, 199, 0.6); }
+        .btn-play:active { transform: scale(0.95); }
+        .btn-ff { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+        .btn-ff:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+        /* Glassmorphism Cards */
+        .card { background: var(--glass-bg); border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 25px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+        .card h2 { border-left: 5px solid var(--secondary); padding-left: 15px; margin-bottom: 25px; color: var(--primary); font-size: 1.5rem; display: flex; align-items: center; }
+        
+        /* Table Styles */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 700px; background: white; }
+        th, td { padding: 15px 12px; text-align: center; border-bottom: 1px solid #f1f5f9; }
+        th { background-color: #f8fafc; color: var(--text-dark); font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
+        .team-cell { display: flex; align-items: center; gap: 15px; text-align: left; font-weight: 700; white-space: nowrap; font-size: 1.05rem; }
+        .team-logo-sm { width: 40px; height: 40px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        tr:hover { background-color: #f1f5f9; }
+        .rank-1, .rank-2 { background-color: rgba(16, 185, 129, 0.08); }
+        .rank-3, .rank-4 { background-color: rgba(245, 158, 11, 0.08); }
+        .nrr-positive { color: var(--success); font-weight: bold; }
+        .nrr-negative { color: var(--danger); font-weight: bold; }
+
+        /* Match History Grid (Ticket Style) */
+        .match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .history-item { 
+            padding: 20px; border-radius: 16px; background: #fff; position: relative; 
+            border-top: 5px solid var(--secondary); transition: transform 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        }
+        .history-item:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .history-title { font-weight: bold; color: var(--text-light); font-size: 0.85rem; margin-bottom: 15px; display: inline-block; background: #f1f5f9; padding: 4px 12px; border-radius: 20px; }
+        .history-teams { font-weight: 700; color: var(--primary); font-size: 1.15rem; display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        .history-scores { font-size: 0.95rem; margin: 15px 0; color: #475569; background: #f8fafc; padding: 15px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1; }
+        .history-result { color: var(--success); font-weight: 800; font-size: 1rem; text-align: center; margin-top: 10px; }
+        .history-venue-txt { text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 10px; }
+        .btn-small { position: absolute; right: 15px; top: 15px; padding: 6px 15px; font-size: 0.8rem; background: #e2e8f0; color: var(--text-dark); font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn-small:hover { background: var(--secondary); color: white; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .stat-card { background: linear-gradient(135deg, #ffffff, #f8fafc); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; border: 1px solid #e2e8f0; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(90deg, var(--secondary), var(--accent)); }
+        .stat-icon { font-size: 3.5rem; margin-bottom: 15px; display: inline-block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+        .stat-title { color: var(--text-light); font-size: 0.9rem; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 2.5rem; color: var(--primary); font-weight: 800; margin-bottom: 10px; }
+        .stat-player { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        /* Celebrations */
+        .celebration-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; color: white; cursor: pointer; backdrop-filter: blur(8px); }
+        .celebration-content { text-align: center; animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; z-index: 10; }
+        .celeb-title { font-size: 1.3rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+        .celeb-team { font-size: 3.5rem; font-weight: 800; color: var(--accent); text-shadow: 0 10px 30px rgba(245, 158, 11, 0.6); line-height: 1.2; }
+        .celeb-margin { font-size: 1.5rem; color: #bae6fd; margin-top: 15px; font-weight: 600; }
+        .knockout-glow { animation: pulseGlow 1.5s infinite alternate; }
+        @keyframes pulseGlow { from { text-shadow: 0 0 15px #f59e0b, 0 0 30px #f59e0b; } to { text-shadow: 0 0 25px #f59e0b, 0 0 50px #f59e0b, 0 0 70px #ef4444; } }
+        
+        .firework { position: absolute; width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 15px 3px white; animation: explode 1s ease-out forwards; }
+        @keyframes explode { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(35); opacity: 0; } }
+        .emoji-drop { position: absolute; font-size: 2.5rem; animation: fall linear forwards; z-index: 1; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
+        
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fall { 0% { transform: translateY(-10vh) rotate((Math.random()*360)deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+
+        /* Scorecard Modal */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); overflow-y: auto; padding: 20px 0; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card-bg); margin: 0 auto; padding: 30px 25px; border-radius: 24px; width: 95%; max-width: 750px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
+        .close-btn { position: absolute; right: 20px; top: 20px; width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #334155; cursor: pointer; border: none; transition: 0.3s; }
+        .close-btn:hover { background: #e2e8f0; color: var(--danger); transform: rotate(90deg); }
+        .modal-header { text-align: center; border-bottom: 2px dashed #e2e8f0; padding-bottom: 20px; margin-bottom: 25px; }
+
+        /* Responsive Media Queries */
+        @media (max-width: 768px) {
+            nav { flex-direction: column; padding: 12px; gap: 15px; }
+            .nav-brand { margin: 0 auto; }
+            .nav-links { width: 100%; justify-content: space-around; }
+            .nav-btn { font-size: 0.95rem; padding: 8px 15px; }
+            
+            nav { position: static; }
+            .mobile-bottom-nav {
+                display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+                justify-content: space-around; padding: 12px 0; z-index: 1000; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1);
+            }
+            .nav-links { display: none; }
+            
+            .dashboard { padding: 30px 15px; border-radius: 20px; margin: 15px auto; }
+            .teams-display { flex-direction: row; gap: 10px; }
+            .team-logo-lg { width: 70px; height: 70px; }
+            .team-name-lg { font-size: 1.15rem; }
+            .vs { width: 40px; height: 40px; font-size: 1.1rem; }
+            .venue-name { font-size: 1rem; flex-direction: column; gap: 4px; text-align:center;}
+            .venue-details { flex-direction: column; gap: 5px; align-items: center;}
+            
+            .controls { flex-direction: column; width: 100%; }
+            .controls button { width: 100%; padding: 15px; }
+            
+            .celeb-team { font-size: 2.2rem; }
+            .card { padding: 20px 15px; }
+        }
+        
+        @media (min-width: 769px) { .mobile-bottom-nav { display: none; } }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation (PC) -->
+    <nav>
+        <div class="nav-brand">🏆 BPL <span>2030</span></div>
+        <div class="nav-links">
+            <button class="nav-btn active" onclick="switchTab('matches')" id="btn-matches-top">🏏 ম্যাচ</button>
+            <button class="nav-btn" onclick="switchTab('standings')" id="btn-standings-top">📊 পয়েন্ট টেবিল</button>
+            <button class="nav-btn" onclick="switchTab('stats')" id="btn-stats-top">🌟 পরিসংখ্যান</button>
+        </div>
+    </nav>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <div class="mobile-bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('matches')" id="btn-matches-mob">🏏 ম্যাচ</button>
+        <button class="nav-btn" onclick="switchTab('standings')" id="btn-standings-mob">📊 টেবিল</button>
+        <button class="nav-btn" onclick="switchTab('stats')" id="btn-stats-mob">🌟 স্ট্যাটস</button>
+    </div>
+
+    <div class="container">
+        <!-- TAB 1: MATCHES & DASHBOARD -->
+        <section id="tab-matches" class="tab-content active">
+            <!-- Live Dashboard -->
+            <div class="dashboard" id="dashboard">
+                <div class="match-badge" id="nextMatchTitle">ম্যাচ ১ (লিগ পর্ব)</div>
+                <div class="teams-display">
+                    <div class="team-info">
+                        <img id="team1Logo" class="team-logo-lg" src="" alt="Team 1">
+                        <div class="team-name-lg" id="team1Name">ঢাকা ক্যাপিটালস</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team-info">
+                        <img id="team2Logo" class="team-logo-lg" src="" alt="Team 2">
+                        <div class="team-name-lg" id="team2Name">ফরিদপুর ফ্যালকনস</div>
+                    </div>
+                </div>
+                <div class="venue-info">
+                    <div class="venue-name">🏟️ <span id="stadiumName" style="background:none; border:none; padding:0; color:#fff;">পূর্বাচল আন্তর্জাতিক ক্রিকেট স্টেডিয়াম, ঢাকা</span></div>
+                    <div class="venue-details">
+                        <span>👥 দর্শক: <strong id="attendanceCount">৪৫,০০০</strong></span>
+                        <span>🎯 ধারণক্ষমতা: <strong id="maxCapacity">৫০,০০০</strong></span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn-play" onclick="playCurrentMatch()" id="playBtn">▶ ম্যাচ শুরু করুন</button>
+                    <button class="btn-ff" onclick="fastForwardLeague()" id="ffBtn">⏩ লিগ ফাস্ট ফরোয়ার্ড</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>সাম্প্রতিক ফলাফল</h2>
+                <div class="match-grid" id="matchList">
+                    <div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px; font-size:1.1rem;">টুর্নামেন্ট এখনো শুরু হয়নি। উপরের "ম্যাচ শুরু করুন" বাটনে ক্লিক করুন।</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: POINTS TABLE -->
+        <section id="tab-standings" class="tab-content">
+            <div class="card">
+                <h2>পয়েন্ট টেবিল</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>র‍্যাংক</th>
+                                <th>দল</th>
+                                <th>ম্যাচ</th>
+                                <th>জয়</th>
+                                <th>হার</th>
+                                <th>পয়েন্ট</th>
+                                <th>NRR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pointsBody"></tbody>
+                    </table>
+                </div>
+                <div style="font-size: 0.9rem; color: #64748b; margin-top: 20px; text-align: center; padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <span style="color:var(--success); font-weight:bold;">সবুজ:</span> কোয়ালিফায়ার (Top 2) | 
+                    <span style="color:var(--accent); font-weight:bold;">হলুদ:</span> এলিমিনেটর (3rd & 4th)
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: TOURNAMENT STATS -->
+        <section id="tab-stats" class="tab-content">
+            <div class="card">
+                <h2>টুর্নামেন্ট পরিসংখ্যান</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px; font-size:1.1rem;">ম্যাচ খেলা শুরু হলে এখানে পরিসংখ্যান আপডেট হবে।</div>
+                </div>
+            </div>
+            
+            <div class="stats-grid" style="margin-top: 25px;">
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; color: var(--primary); font-size:1.3rem; border-bottom:2px solid #e2e8f0; padding-bottom:10px;">সর্বোচ্চ রান (Top 5)</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>খেলোয়াড়</th><th>দল</th><th>রান</th></tr></thead>
+                            <tbody id="topBattersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 20px; color: var(--primary); font-size:1.3rem; border-bottom:2px solid #e2e8f0; padding-bottom:10px;">সর্বোচ্চ উইকেট (Top 5)</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>খেলোয়াড়</th><th>দল</th><th>উইকেট</th></tr></thead>
+                            <tbody id="topBowlersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Celebration Animation Overlay -->
+    <div class="celebration-overlay" id="celebrationOverlay" onclick="closeCelebration()">
+        <div class="celebration-content">
+            <div class="celeb-title" id="celebTitle">ম্যাচ ১ ফলাফল</div>
+            <div id="trophyIcon" style="font-size: 6rem; display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); filter: drop-shadow(0 0 25px gold);">🏆</div>
+            <div class="celeb-team" id="celebWinner">ঢাকা ক্যাপিটালস</div>
+            <div class="celeb-margin" id="celebMargin">৫ উইকেটে জয়ী!</div>
+            <div style="margin-top: 30px; font-size: 0.95rem; font-weight:600; background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 30px; display: inline-block; border:1px solid rgba(255,255,255,0.2);">স্কিপ করতে ক্লিক করুন</div>
+        </div>
+    </div>
+
+    <!-- Scorecard Modal -->
+    <div id="scoreModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <div id="scorecardContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // UI Navigation Setup
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            let btnTop = document.getElementById(`btn-${tabId}-top`);
+            let btnMob = document.getElementById(`btn-${tabId}-mob`);
+            if(btnTop) btnTop.classList.add('active');
+            if(btnMob) btnMob.classList.add('active');
+            
+            if(tabId === 'stats') renderStats();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // SVG Logo Generator
+        function generateSVGLogo(primary, secondary, icon) {
+            const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="grad-${primary.replace('#','')}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:${primary};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:${secondary};stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="shadow">
+                        <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+                    </filter>
+                </defs>
+                <path d="M50 5 L92 22 L92 55 C92 78 50 95 50 95 C50 95 8 78 8 55 L8 22 Z" fill="url(#grad-${primary.replace('#','')})" filter="url(#shadow)"/>
+                <circle cx="50" cy="45" r="30" fill="rgba(255,255,255,0.15)"/>
+                <text x="50" y="58" font-size="36" text-anchor="middle" fill="#fff" style="font-family: Arial;">${icon}</text>
+            </svg>`;
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        }
+
+        // Teams Data
+        const teamsData = [
+            { name: "ঢাকা ক্যাপিটালস", short: "DAC", c1: "#0ea5e9", c2: "#1e3a8a", icon: "🦁", players: ["ফিল সল্ট", "তাওহীদ হৃদয়", "হ্যারি ব্রুক", "আন্দ্রে রাসেল", "শিহাবজাদা ফারহান", "আজমতুল্লাহ ওমরজাই", "রিশাদ হোসেন", "তাসকিন আহমেদ", "মিচেল স্টার্ক", "স্পেন্সার জনসন", "আশুবুজ্জামান"] },
+            { name: "ফরিদপুর ফ্যালকনস", short: "FDF", c1: "#ef4444", c2: "#7f1d1d", icon: "🦅", players: ["লিটন দাস", "রহমানুল্লাহ গুরবাজ", "নাজমুল হোসেন শান্ত", "ক্যামেরন গ্রিন", "শিমরন হেটমায়ার", "জ্যাকব বেখেল", "মার্কো জানসেন", "সুয়াশ শর্মা", "শাহীন শাহ আফ্রিদি", "মুস্তাফিজুর রহমান", "ইবাদত হোসেন"] },
+            { name: "কলকাতা রয়্যালস", short: "KOL", c1: "#8b5cf6", c2: "#4c1d95", icon: "👑", players: ["পাখুম নিশাঙ্কা", "জেক ফ্রেজার-ম্যাকগার্ক", "সৌম্য সরকার", "সরফরাজ খান", "ড্যারিল মিচেল", "মেহেদী হাসান মিরাজ", "ওয়ানিন্দু হাসারাঙ্গা", "শাহবাজ আহমেদ", "রবি বিষ্ণুই", "মুকেশ কুমার", "আবরার আহমেদ"] },
+            { name: "রাঁচি থান্ডার্স", short: "RAN", c1: "#f59e0b", c2: "#b45309", icon: "⚡", players: ["সাইম আইয়ুব", "ফিন অ্যালেন", "ফখর জামান", "হেইনরিখ ক্লাসেন", "হায়দার আলী", "জেমস নিশাম", "স্যাম কারান", "রাহুল চাহার", "আকাশ দীপ", "আভেশ খান", "দিলশান মাদুশঙ্কা"] },
+            { name: "চিটাগং কিংস", short: "CTG", c1: "#f97316", c2: "#9a3412", icon: "⚔️", players: ["উইল জ্যাকস", "নাঈম শেখ", "নিকোলাস পুরান", "মাহমুদুল হাসান জয়", "রোভম্যান পাওয়েল", "জেসন হোল্ডার", "ডেভিড উইলি", "রশিদ খান", "নাঈম হাসান", "হাসান মাহমুদ", "কাগিসো রাবাদা"] },
+            { name: "ওড়িশা টাইটানস", short: "ODI", c1: "#10b981", c2: "#064e3b", icon: "🛡️", players: ["জস বাটলার", "কুইন্টন ডি কক", "এইডেন মার্করাম", "শাহরুক খান", "সাইফ হাসান", "মিচেল স্যান্টনার", "নাসুম আহমেদ", "গাস অ্যাটকিনসন", "রিস টপলি", "শরিফুল ইসলাম", "নাসিম শাহ"] },
+            { name: "পাটনা ওয়ারিয়র্স", short: "PAT", c1: "#3b82f6", c2: "#1d4ed8", icon: "🏹", players: ["ঈশান কিষান", "রাচিন রবীন্দ্র", "লিয়াম লিভিংস্টোন", "মার্কাস স্টয়নিস", "টিম ডেভিড", "সাকিবুল গনি", "উইয়ারান মুল্ডার", "ঋত্বিক চ্যাটির্জি", "ফাহিম ফয়সাল", "আদনান সামি", "কাসুন রাজীখা"] },
+            { name: "আসাম সিক্সার্স", short: "ASM", c1: "#e11d48", c2: "#881337", icon: "☄️", players: ["মোহাম্মদ রিজওয়ান", "বাবর আজম", "আশিকুর রহমান শিবলি", "রিয়ান পরাগ", "গ্লেন ফিলিপস", "নুরুল হাসান সোহান", "চামিকা করুণারত্নে", "তানভীর সাঙ্ঘা", "মাথিশা পাখিরানা", "খলিল আহমেদ", "মোহাম্মদ হাসনাইন"] }
+        ];
+
+        // Specific Stadiums
+        const stadiums = [
+            { name: "পূর্বাচল আন্তর্জাতিক ক্রিকেট স্টেডিয়াম, ঢাকা", capacity: 50000 },
+            { name: "সিলেট ক্রিকেট স্টেডিয়াম", capacity: 25000 },
+            { name: "রিভারসাইড ইন্টারন্যাশনাল ক্রিকেট স্টেডিয়াম, ফরিদপুর", capacity: 70000 },
+            { name: "ইডেন গার্ডেন, কলকাতা", capacity: 66000 },
+            { name: "রাঁচি স্পোর্টস কমপ্লেক্স", capacity: 45000 }
+        ];
+
+        let teams = teamsData.map(t => ({ 
+            ...t, played: 0, won: 0, lost: 0, points: 0, runsFor: 0, ballsFor: 0, runsAgainst: 0, ballsAgainst: 0, nrr: 0,
+            logo: generateSVGLogo(t.c1, t.c2, t.icon) 
+        }));
+        
+        let playerStats = {};
+        teams.forEach(t => t.players.forEach(p => playerStats[p] = { name: p, team: t.name, teamLogo: t.logo, runs: 0, wkts: 0, sixes: 0, matches: 0 }));
+        let tournamentStats = { highestScore: 0, highestScoreTeam: "", highestScoreMatch: "", totalSixes: 0 };
+        
+        let schedule = [], matchesPlayed = [], currentMatchIndex = 0;
+        let tournamentPhase = "LEAGUE", q1Winner, q1Loser, elimWinner, finalist1, finalist2;
+
+        function getRandomVenue() {
+            let v = stadiums[Math.floor(Math.random() * stadiums.length)];
+            let att = Math.floor(v.capacity * (0.6 + Math.random() * 0.4));
+            return { name: v.name, max: v.capacity.toLocaleString('en-IN'), attendance: att.toLocaleString('en-IN') };
+        }
+
+        // Advanced Scheduling (Ensures NO consecutive matches for any team)
+        function generateLeagueSchedule() {
+            let matchPool = [];
+            for (let round = 1; round <= 2; round++) {
+                for (let i = 0; i < teams.length; i++) {
+                    for (let j = i + 1; j < teams.length; j++) {
+                        matchPool.push({ t1: teams[i], t2: teams[j], isKnockout: false, ...getRandomVenue() });
+                    }
+                }
+            }
+
+            // Shuffle pool
+            for (let i = matchPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [matchPool[i], matchPool[j]] = [matchPool[j], matchPool[i]];
+            }
+
+            schedule = [];
+            schedule.push(matchPool.pop());
+
+            // Pick matches smartly to avoid consecutive play
+            while (matchPool.length > 0) {
+                let lastMatch = schedule[schedule.length - 1];
+                let foundIndex = -1;
+
+                for (let i = 0; i < matchPool.length; i++) {
+                    let candidate = matchPool[i];
+                    if (candidate.t1.name !== lastMatch.t1.name && candidate.t1.name !== lastMatch.t2.name &&
+                        candidate.t2.name !== lastMatch.t1.name && candidate.t2.name !== lastMatch.t2.name) {
+                        foundIndex = i;
+                        break;
+                    }
+                }
+
+                if (foundIndex !== -1) {
+                    schedule.push(matchPool.splice(foundIndex, 1)[0]);
+                } else {
+                    schedule.push(matchPool.pop());
+                }
+            }
+
+            // Final safety pass: Swap any remaining consecutive matches
+            for (let i = 1; i < schedule.length; i++) {
+                let prev = schedule[i - 1];
+                let curr = schedule[i];
+                if (curr.t1.name === prev.t1.name || curr.t1.name === prev.t2.name ||
+                    curr.t2.name === prev.t1.name || curr.t2.name === prev.t2.name) {
+                    for (let j = i + 1; j < schedule.length; j++) {
+                        let candidate = schedule[j];
+                        if (candidate.t1.name !== prev.t1.name && candidate.t1.name !== prev.t2.name &&
+                            candidate.t2.name !== prev.t1.name && candidate.t2.name !== prev.t2.name) {
+                            let temp = schedule[i];
+                            schedule[i] = schedule[j];
+                            schedule[j] = temp;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            schedule.forEach((m, idx) => { m.id = idx + 1; m.title = `ম্যাচ ${idx + 1}`; });
+        }
+
+        generateLeagueSchedule();
+        updateDashboard();
+        updatePointsTable();
+
+        function updateDashboard() {
+            let dash = document.getElementById('dashboard');
+            if (currentMatchIndex < schedule.length) {
+                let m = schedule[currentMatchIndex];
+                document.getElementById('nextMatchTitle').innerText = m.isKnockout ? `🔥 ${m.title} 🔥` : `${m.title} (লিগ পর্ব)`;
+                document.getElementById('team1Name').innerText = m.t1.name;
+                document.getElementById('team2Name').innerText = m.t2.name;
+                document.getElementById('team1Logo').src = m.t1.logo;
+                document.getElementById('team2Logo').src = m.t2.logo;
+                document.getElementById('stadiumName').innerText = m.name; // Fixed Stadium name binding
+                document.getElementById('attendanceCount').innerText = m.attendance;
+                document.getElementById('maxCapacity').innerText = m.max;
+                
+                if(tournamentPhase === "KNOCKOUT") {
+                    document.getElementById('ffBtn').style.display = 'none';
+                    dash.classList.add('knockout-mode');
+                }
+            } else {
+                if (tournamentPhase === "LEAGUE") {
+                    setupKnockouts();
+                } else {
+                    let champ = schedule[schedule.length-1].winnerObj;
+                    dash.innerHTML = `
+                        <div style="font-size:1.8rem; color:gold; font-weight:800; margin-bottom:15px; text-transform:uppercase; letter-spacing:2px; text-shadow:0 2px 4px rgba(0,0,0,0.5);">🏆 টুর্নামেন্ট সমাপ্ত 🏆</div>
+                        <img src="${champ.logo}" style="width:130px; height:130px; filter:drop-shadow(0 0 40px rgba(255,215,0,0.8)); margin: 15px 0; transform:scale(1.1);">
+                        <div style="font-size:2.4rem; font-weight:800; color:var(--accent); line-height:1.2; text-shadow:0 2px 5px rgba(0,0,0,0.8);">চ্যাম্পিয়ন:<br>${champ.name}</div>
+                        <button onclick="switchTab('stats')" style="margin-top:35px; padding: 14px 35px; background:linear-gradient(135deg, #f59e0b, #ea580c); border:none; border-radius:14px; font-weight:bold; color:white; cursor:pointer; font-size:1.15rem; box-shadow:0 10px 25px rgba(234,88,12,0.5); transition:transform 0.2s;">পূর্ণাঙ্গ পরিসংখ্যান দেখুন 📊</button>
+                    `;
+                }
+            }
+        }
+
+        function setupKnockouts() {
+            tournamentPhase = "KNOCKOUT";
+            teams.sort((a, b) => b.points !== a.points ? b.points - a.points : b.nrr - a.nrr);
+            let top4 = teams.slice(0, 4);
+            
+            schedule.push({ id: 57, title: "কোয়ালিফায়ার ১", t1: top4[0], t2: top4[1], isKnockout: true, type: "Q1", ...getRandomVenue() });
+            schedule.push({ id: 58, title: "এলিমিনেটর", t1: top4[2], t2: top4[3], isKnockout: true, type: "ELIM", ...getRandomVenue() });
+            
+            updateDashboard();
+            alert("লিগ পর্ব শেষ! পয়েন্ট টেবিল চূড়ান্ত। এখন শুরু হবে প্লে-অফ পর্ব।");
+            switchTab('matches');
+        }
+
+        function playCurrentMatch() {
+            if (currentMatchIndex >= schedule.length) return;
+            let m = schedule[currentMatchIndex];
+            
+            if (m.type === "Q2") { m.t1 = q1Loser; m.t2 = elimWinner; updateDashNames(m); } 
+            else if (m.type === "FINAL") { m.t1 = finalist1; m.t2 = finalist2; updateDashNames(m); }
+
+            let result = simulateSingleMatch(m);
+            m.winnerObj = result.winnerObj;
+            matchesPlayed.unshift(result);
+
+            if (m.type === "Q1") {
+                q1Winner = m.winnerObj; q1Loser = m.winnerObj.name === m.t1.name ? m.t2 : m.t1; finalist1 = q1Winner;
+            } else if (m.type === "ELIM") {
+                elimWinner = m.winnerObj;
+                schedule.push({ id: 59, title: "কোয়ালিফায়ার ২", t1: q1Loser, t2: elimWinner, isKnockout: true, type: "Q2", ...getRandomVenue() });
+            } else if (m.type === "Q2") {
+                finalist2 = m.winnerObj;
+                let v = stadiums[2]; // Final at Faridpur Riverside (Largest 70,000 capacity)
+                schedule.push({ id: 60, title: "🏆 মেগা ফাইনাল 🏆", t1: finalist1, t2: finalist2, isKnockout: true, type: "FINAL", name: v.name, max: v.capacity.toLocaleString('en-IN'), attendance: v.capacity.toLocaleString('en-IN') });
+            }
+
+            currentMatchIndex++;
+            updatePointsTable();
+            renderRecentMatches();
+            updateDashboard();
+            if(document.getElementById('tab-stats').classList.contains('active')) renderStats();
+            
+            triggerCelebration(result, m);
+        }
+
+        function updateDashNames(m) {
+            document.getElementById('team1Name').innerText = m.t1.name; document.getElementById('team2Name').innerText = m.t2.name;
+            document.getElementById('team1Logo').src = m.t1.logo; document.getElementById('team2Logo').src = m.t2.logo;
+        }
+
+        function fastForwardLeague() {
+            while (currentMatchIndex < 56) {
+                let m = schedule[currentMatchIndex];
+                let result = simulateSingleMatch(m);
+                matchesPlayed.unshift(result);
+                currentMatchIndex++;
+            }
+            updatePointsTable();
+            renderRecentMatches();
+            setupKnockouts();
+        }
+
+        function simulateSingleMatch(m) {
+            let inn1 = simulateInnings(m.t1, m.t2);
+            let inn2 = simulateInnings(m.t2, m.t1, inn1.runs + 1);
+
+            let winner, marginStr;
+            if (inn2.runs > inn1.runs) { winner = m.t2; marginStr = `${10 - inn2.wkts} উইকেটে`; }
+            else if (inn1.runs > inn2.runs) { winner = m.t1; marginStr = `${inn1.runs - inn2.runs} রানে`; }
+            else { winner = m.t2; marginStr = "সুপার ওভারে"; }
+
+            if(inn1.runs > tournamentStats.highestScore) { tournamentStats.highestScore = inn1.runs; tournamentStats.highestScoreTeam = m.t1.name; tournamentStats.highestScoreMatch = m.title; }
+            if(inn2.runs > tournamentStats.highestScore) { tournamentStats.highestScore = inn2.runs; tournamentStats.highestScoreTeam = m.t2.name; tournamentStats.highestScoreMatch = m.title; }
+
+            m.t1.players.forEach(p => playerStats[p].matches++);
+            m.t2.players.forEach(p => playerStats[p].matches++);
+
+            if (!m.isKnockout) {
+                let t1Ref = teams.find(t => t.name === m.t1.name), t2Ref = teams.find(t => t.name === m.t2.name);
+                t1Ref.played++; t2Ref.played++;
+                if(winner.name === m.t1.name) { t1Ref.won++; t1Ref.points += 2; t2Ref.lost++; }
+                else { t2Ref.won++; t2Ref.points += 2; t1Ref.lost++; }
+
+                let t1Balls = inn1.wkts === 10 ? 120 : inn1.totalBalls;
+                let t2Balls = inn2.wkts === 10 ? 120 : inn2.totalBalls;
+
+                t1Ref.runsFor += inn1.runs; t1Ref.ballsFor += t1Balls; t1Ref.runsAgainst += inn2.runs; t1Ref.ballsAgainst += t2Balls;
+                t1Ref.nrr = (t1Ref.runsFor / (t1Ref.ballsFor / 6)) - (t1Ref.runsAgainst / (t1Ref.ballsAgainst / 6));
+
+                t2Ref.runsFor += inn2.runs; t2Ref.ballsFor += t2Balls; t2Ref.runsAgainst += inn1.runs; t2Ref.ballsAgainst += t1Balls;
+                t2Ref.nrr = (t2Ref.runsFor / (t2Ref.ballsFor / 6)) - (t2Ref.runsAgainst / (t2Ref.ballsAgainst / 6));
+            }
+
+            return { 
+                id: m.id, title: m.title, t1Name: m.t1.name, t2Name: m.t2.name, t1Logo: m.t1.logo, t2Logo: m.t2.logo,
+                inn1: inn1, inn2: inn2, winnerName: winner.name, margin: marginStr, winnerObj: winner, stadium: m.name, attendance: m.attendance 
+            };
+        }
+
+        function simulateInnings(batTeam, bowlTeam, target = null) {
+            let runs = 0, wkts = 0, totalBalls = 0;
+            let batters = batTeam.players.map(p => ({ name: p, runs: 0, balls: 0, out: false, batted: false, desc: "" }));
+            let bowlers = bowlTeam.players.slice(6, 11).map(p => ({ name: p, balls: 0, runs: 0, wkts: 0 }));
+
+            let striker = 0, nonStriker = 1, nextBatter = 2;
+            batters[0].batted = true; batters[1].batted = true;
+            const outcomes = [0, 0, 1, 1, 1, 2, 2, 3, 4, 4, 6, 'W'];
+
+            for (let over = 0; over < 20; over++) {
+                let bowlerIdx = over % 5, currentBowler = bowlers[bowlerIdx];
+                for (let ball = 1; ball <= 6; ball++) {
+                    if (wkts === 10 || (target && runs >= target)) break;
+                    totalBalls++; currentBowler.balls++; batters[striker].balls++;
+                    let outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+
+                    if (outcome === 'W') {
+                        wkts++; currentBowler.wkts++; batters[striker].out = true;
+                        batters[striker].desc = `b ${currentBowler.name}`;
+                        playerStats[currentBowler.name].wkts++;
+                        if (wkts < 10 && nextBatter < 11) { striker = nextBatter; batters[striker].batted = true; nextBatter++; }
+                    } else {
+                        runs += outcome; currentBowler.runs += outcome; batters[striker].runs += outcome;
+                        playerStats[batters[striker].name].runs += outcome;
+                        if(outcome === 6) { playerStats[batters[striker].name].sixes++; tournamentStats.totalSixes++; }
+                        if (outcome === 1 || outcome === 3) [striker, nonStriker] = [nonStriker, striker];
+                    }
+                }
+                [striker, nonStriker] = [nonStriker, striker];
+                if (wkts === 10 || (target && runs >= target)) break;
+            }
+            return { team: batTeam.name, runs, wkts, totalBalls, overs: Math.floor(totalBalls / 6) + '.' + (totalBalls % 6), batters, bowlers };
+        }
+
+        function updatePointsTable() {
+            teams.sort((a, b) => b.points !== a.points ? b.points - a.points : b.nrr - a.nrr);
+            const pBody = document.getElementById('pointsBody');
+            pBody.innerHTML = '';
+            teams.forEach((t, index) => {
+                let rowClass = "";
+                if(tournamentPhase === "LEAGUE" || tournamentPhase === "KNOCKOUT"){
+                    if(index < 2) rowClass = "rank-1"; else if(index < 4) rowClass = "rank-3";
+                }
+                let nrrClass = t.nrr > 0 ? "nrr-positive" : (t.nrr < 0 ? "nrr-negative" : "");
+                let nrrDisplay = (t.nrr > 0 ? "+" : "") + (isNaN(t.nrr) ? "0.000" : t.nrr.toFixed(3));
+                
+                pBody.innerHTML += `<tr class="${rowClass}">
+                    <td style="font-weight:bold; color:var(--text-light);">${index + 1}</td>
+                    <td class="team-cell"><img src="${t.logo}" class="team-logo-sm"> ${t.name}</td>
+                    <td>${t.played}</td>
+                    <td>${t.won}</td>
+                    <td>${t.lost}</td>
+                    <td><strong style="font-size:1.2rem; color:var(--primary);">${t.points}</strong></td>
+                    <td class="${nrrClass}">${nrrDisplay}</td>
+                </tr>`;
+            });
+        }
+
+        function renderRecentMatches() {
+            const mList = document.getElementById('matchList');
+            mList.innerHTML = '';
+            matchesPlayed.forEach(m => {
+                mList.innerHTML += `
+                <div class="history-item">
+                    <button class="btn-small" onclick="viewScorecard(${m.id})">স্কোরবোর্ড</button>
+                    <div class="history-title">${m.title}</div>
+                    <div class="history-teams">
+                        <img src="${m.t1Logo}" width="30" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))"> 
+                        <span>${m.t1Name}</span>
+                        <span style="color:#cbd5e1; font-size:12px; margin:0 5px; font-weight:normal;">vs</span> 
+                        <span>${m.t2Name}</span>
+                        <img src="${m.t2Logo}" width="30" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))">
+                    </div>
+                    <div class="history-scores">
+                        <div style="font-weight:bold; color:var(--text-dark); margin-bottom:5px;">${m.inn1.team}: <span style="font-size:1.1rem; color:var(--primary);">${m.inn1.runs}/${m.inn1.wkts}</span> <span style="font-weight:normal; font-size:0.85rem;">(${m.inn1.overs})</span></div>
+                        <div style="font-weight:bold; color:var(--text-dark);">${m.inn2.team}: <span style="font-size:1.1rem; color:var(--primary);">${m.inn2.runs}/${m.inn2.wkts}</span> <span style="font-weight:normal; font-size:0.85rem;">(${m.inn2.overs})</span></div>
+                    </div>
+                    <div class="history-result">🏆 ${m.winnerName} ${m.margin}</div>
+                    <div class="history-venue-txt">📍 ${m.stadium}</div>
+                </div>`;
+            });
+        }
+
+        function renderStats() {
+            if(matchesPlayed.length === 0) return;
+            let playersArr = Object.values(playerStats);
+            
+            playersArr.sort((a,b) => b.runs - a.runs); let topBatter = playersArr[0];
+            playersArr.sort((a,b) => b.wkts - a.wkts); let topBowler = playersArr[0];
+            playersArr.sort((a,b) => b.sixes - a.sixes); let topSixer = playersArr[0];
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">🏏</div>
+                    <div class="stat-title">অরেঞ্জ ক্যাপ (সর্বোচ্চ রান)</div>
+                    <div class="stat-value">${topBatter.runs}</div>
+                    <div class="stat-player"><img src="${topBatter.teamLogo}" width="28"> ${topBatter.name}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-title">পার্পল ক্যাপ (সর্বোচ্চ উইকেট)</div>
+                    <div class="stat-value">${topBowler.wkts}</div>
+                    <div class="stat-player"><img src="${topBowler.teamLogo}" width="28"> ${topBowler.name}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💥</div>
+                    <div class="stat-title">সর্বোচ্চ ছক্কা</div>
+                    <div class="stat-value">${topSixer.sixes}</div>
+                    <div class="stat-player"><img src="${topSixer.teamLogo}" width="28"> ${topSixer.name}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-title">দলীয় সর্বোচ্চ স্কোর</div>
+                    <div class="stat-value">${tournamentStats.highestScore}</div>
+                    <div class="stat-player" style="font-size:1.1rem;">${tournamentStats.highestScoreTeam}</div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:5px;">(${tournamentStats.highestScoreMatch})</div>
+                </div>
+            `;
+
+            playersArr.sort((a,b) => b.runs - a.runs);
+            let batTable = "";
+            for(let i=0; i<Math.min(5, playersArr.length); i++) {
+                if(playersArr[i].runs > 0) batTable += `<tr><td><div style="font-weight:700;">${playersArr[i].name}</div></td><td><img src="${playersArr[i].teamLogo}" width="22" style="vertical-align:middle; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"> <span style="font-size:0.9rem;">${playersArr[i].team}</span></td><td><strong style="color:var(--primary); font-size:1.2rem;">${playersArr[i].runs}</strong></td></tr>`;
+            }
+            document.getElementById('topBattersTable').innerHTML = batTable;
+
+            playersArr.sort((a,b) => b.wkts - a.wkts);
+            let bowlTable = "";
+            for(let i=0; i<Math.min(5, playersArr.length); i++) {
+                if(playersArr[i].wkts > 0) bowlTable += `<tr><td><div style="font-weight:700;">${playersArr[i].name}</div></td><td><img src="${playersArr[i].teamLogo}" width="22" style="vertical-align:middle; filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"> <span style="font-size:0.9rem;">${playersArr[i].team}</span></td><td><strong style="color:var(--secondary); font-size:1.2rem;">${playersArr[i].wkts}</strong></td></tr>`;
+            }
+            document.getElementById('topBowlersTable').innerHTML = bowlTable;
+        }
+
+        /* 🌟 Smart Celebrations (Fireworks for Final, Glow for Playoffs) 🌟 */
+        function triggerCelebration(result, matchObj) {
+            let titleEl = document.getElementById('celebTitle');
+            let teamEl = document.getElementById('celebWinner');
+            let trophy = document.getElementById('trophyIcon');
+            let overlay = document.getElementById('celebrationOverlay');
+            
+            titleEl.innerText = `${result.title} এর ফলাফল`;
+            teamEl.innerText = result.winnerName;
+            document.getElementById('celebMargin').innerText = `${result.margin} জয় লাভ করেছে!`;
+            
+            teamEl.className = 'celeb-team';
+            trophy.style.display = 'none';
+            overlay.style.background = 'rgba(15, 23, 42, 0.95)';
+            
+            if(matchObj.type === "FINAL") {
+                titleEl.innerText = "🏆 বিপিএল ২০৩০ চ্যাম্পিয়ন 🏆";
+                teamEl.classList.add('knockout-glow');
+                trophy.style.display = 'block';
+                overlay.style.background = 'radial-gradient(circle, rgba(15,23,42,0.95) 0%, rgba(0,0,0,0.98) 100%)';
+                createFireworks(overlay);
+            } else if (matchObj.isKnockout) {
+                titleEl.innerText = `🔥 ${result.title} জয়ী 🔥`;
+                teamEl.classList.add('knockout-glow');
+                createConfetti(overlay, ['⭐', '🔥', '🏆']);
+            } else {
+                createConfetti(overlay, ['🎉', '🏏', '✨']);
+            }
+
+            overlay.style.display = 'flex';
+            setTimeout(closeCelebration, matchObj.type === "FINAL" ? 5000 : 2500); 
+        }
+
+        function createConfetti(container, emojis) {
+            for(let i=0; i<35; i++) {
+                let emoji = document.createElement('div');
+                emoji.className = 'emoji-drop';
+                emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = Math.random() * 100 + 'vw';
+                emoji.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                emoji.style.fontSize = (Math.random() * 1.5 + 1.2) + 'rem';
+                container.appendChild(emoji);
+            }
+        }
+
+        function createFireworks(container) {
+            for(let i=0; i<25; i++) {
+                let fw = document.createElement('div');
+                fw.className = 'firework';
+                let colors = ['#f59e0b', '#38bdf8', '#ef4444', '#10b981', '#ffffff', '#e879f9'];
+                fw.style.boxShadow = `0 0 15px 4px ${colors[Math.floor(Math.random()*colors.length)]}`;
+                fw.style.left = (Math.random() * 80 + 10) + 'vw';
+                fw.style.top = (Math.random() * 50 + 10) + 'vh';
+                fw.style.animationDelay = (Math.random() * 1.5) + 's';
+                container.appendChild(fw);
+            }
+        }
+
+        function closeCelebration() {
+            document.getElementById('celebrationOverlay').style.display = 'none';
+            document.querySelectorAll('.emoji-drop, .firework').forEach(e => e.remove());
+        }
+
+        // Beautiful Mobile Responsive Scorecard
+        function viewScorecard(matchId) {
+            const m = matchesPlayed.find(x => x.id === matchId);
+            let html = `
+            <div class="modal-header">
+                <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:15px;">
+                    <img src="${m.t1Logo}" width="55" style="filter:drop-shadow(0 5px 10px rgba(0,0,0,0.2));">
+                    <span style="font-size:1.5rem; font-weight:800; color:var(--accent);">VS</span>
+                    <img src="${m.t2Logo}" width="55" style="filter:drop-shadow(0 5px 10px rgba(0,0,0,0.2));">
+                </div>
+                <h2 style="font-size:1.5rem; color:var(--primary);">${m.t1Name} <br><span style="font-size:1rem; color:#64748b; font-weight:normal;">বনাম</span><br> ${m.t2Name}</h2>
+                <div style="color:var(--success); font-weight:800; font-size:1.15rem; margin:15px 0; background:rgba(16, 185, 129, 0.1); padding:8px 20px; border-radius:30px; display:inline-block; border: 1px solid rgba(16, 185, 129, 0.3);">🏆 ${m.winnerName} ${m.margin} জয়ী</div>
+                <div style="font-size: 0.95rem; color: #64748b; font-weight:600; display:flex; flex-direction:column; gap:5px; align-items:center;">
+                    <span>📍 ${m.stadium}</span>
+                    <span style="background:#f1f5f9; padding:3px 10px; border-radius:10px;">👥 দর্শক: ${m.attendance}</span>
+                </div>
+            </div>`;
+
+            [m.inn1, m.inn2].forEach(inn => {
+                let rr = (inn.runs / (inn.totalBalls / 6)).toFixed(2);
+                html += `
+                <div style="background:linear-gradient(90deg, var(--primary), var(--primary-light)); color:white; padding:15px 20px; border-radius:12px; margin: 30px 0 15px 0; font-weight:700; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                    <span style="font-size:1.1rem; letter-spacing:0.5px;">${inn.team}</span>
+                    <div style="text-align:right;">
+                        <span style="font-size:1.3rem; color:var(--accent); font-weight:800;">${inn.runs}/${inn.wkts}</span> 
+                        <span style="font-size:0.9rem; color:#cbd5e1; font-weight:normal;">(${inn.overs} ওভার)</span>
+                    </div>
+                </div>`;
+                
+                html += `<div class="table-responsive"><table style="width:100%;">
+                    <tr style="background:#f8fafc;"><th style="text-align:left;">ব্যাটসম্যান</th><th style="text-align:left;">অবস্থা</th><th>R</th><th>B</th><th>SR</th></tr>`;
+                inn.batters.filter(b => b.batted).forEach(b => {
+                    let status = b.out ? `<span style="color:#94a3b8;font-size:0.85rem;">${b.desc}</span>` : '<span style="color:var(--success);font-weight:bold;font-size:0.9rem;">অপরাজিত</span>';
+                    html += `<tr><td style="font-weight:700; font-size:1.05rem;">${b.name}</td><td>${status}</td><td style="font-weight:800; font-size:1.15rem; color:var(--text-dark);">${b.runs}</td><td>${b.balls}</td><td style="color:#64748b;">${b.balls>0?((b.runs/b.balls)*100).toFixed(1):'0.0'}</td></tr>`;
+                });
+                html += `</table></div>`;
+                
+                html += `<div class="table-responsive" style="margin-top:20px;"><table style="width:100%;">
+                    <tr style="background:#f8fafc;"><th style="text-align:left;">বোলার</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Econ</th></tr>`;
+                inn.bowlers.filter(b => b.balls > 0).forEach(b => {
+                    let oversStr = Math.floor(b.balls / 6) + '.' + (b.balls % 6);
+                    let eco = (b.runs / (b.balls / 6)).toFixed(2);
+                    html += `<tr><td style="font-weight:700; font-size:1.05rem;">${b.name}</td><td>${oversStr}</td><td>0</td><td>${b.runs}</td><td style="font-weight:800; color:var(--secondary); font-size:1.2rem;">${b.wkts}</td><td style="color:#64748b;">${eco}</td></tr>`;
+                });
+                html += `</table></div>`;
+            });
+            document.getElementById('scorecardContent').innerHTML = html;
+            document.getElementById('scoreModal').style.display = 'block';
+        }
+
+        function closeModal() { document.getElementById('scoreModal').style.display = 'none'; }
+        window.onclick = function(event) { if (event.target === document.getElementById('scoreModal')) closeModal(); }
+    </script>
+</body>
+</html>
